@@ -44,7 +44,7 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500), nullable=False)
     facebook_link = db.Column(db.String(120), nullable=False)
     
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    # DONE: implement any missing fields, as a database migration using Flask-Migrate
     website_link =db.Column(db.String(120), nullable=False)
     look_talent = db.Column(db.Boolean, nullable=False, default=False)
     seek_description = db.Column(db.String(400), nullable=False)
@@ -65,7 +65,7 @@ class Artist(db.Model):
     image_link = db.Column(db.String(500),nullable=False)
     facebook_link = db.Column(db.String(120), nullable=False)
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    # DONE: implement any missing fields, as a database migration using Flask-Migrate
     website_link = db.Column(db.String(120), nullable=False)
     look_venue = db.Column(db.Boolean, default=False, nullable=False)
     seek_description = db.Column(db.String(400), nullable=False)
@@ -76,7 +76,7 @@ class Artist(db.Model):
     def __repr__(self):
       return f'<Artist : {self.id}, {self.name}, {self.city}, {self.state}, {self.look_venue}>'
 
-    # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+    # DONE Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
 class Show(db.Model):
     __tablename__ = 'show'
@@ -123,9 +123,42 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
+  # DONE: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
+  data = []
+  # Get distinct City and State combination
+  dataCityStates = Venue.query.with_entities(db.distinct(Venue.city),Venue.state).order_by('state','city').all()
+  
+  # Extra distinct City and State combination into placeholder with a for loop
+  for dataCity in dataCityStates:
+    ind_city_state_data = {
+      "city" : dataCity[0],
+      "state" : dataCity[1]
+    }
+    print(ind_city_state_data["city"])
+    print(ind_city_state_data["state"])
+    # Get the venue details for the city and state combination
+    dataVenues = Venue.query.filter(Venue.city == dataCity[0], Venue.state == dataCity[1]).all()
+    ind_venue = []
+    print(dataVenues)
+    # Extra distinct Venue into placeholder with a for loop
+    for dataVenue in dataVenues:
+      venue_data = {
+        "id" : dataVenue.id,
+        "name" : dataVenue.name,
+        "num_upcoming_shows" : 0,
+      }
+      # Append venue details to list
+      ind_venue.append(venue_data)
+    
+    #Include the venue data to the dictionary "ind_city_state_data"""sumary_line"""
+    ind_city_state_data["venues"] = ind_venue
+    
+    # Append all details to the entire data list
+    data.append(ind_city_state_data)
+    
+    
+  """ data=[{
     "city": "San Francisco",
     "state": "CA",
     "venues": [{
@@ -145,7 +178,7 @@ def venues():
       "name": "The Dueling Pianos Bar",
       "num_upcoming_shows": 0,
     }]
-  }]
+  }] """
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
