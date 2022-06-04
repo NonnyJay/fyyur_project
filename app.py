@@ -3,6 +3,7 @@
 #----------------------------------------------------------------------------#
 
 import os
+import sys
 import json
 import dateutil.parser
 import babel
@@ -45,6 +46,7 @@ class Venue(db.Model):
     facebook_link = db.Column(db.String(120), nullable=False)
     
     # DONE: implement any missing fields, as a database migration using Flask-Migrate
+    genres = db.Column(db.String(255), nullable=False)
     website_link =db.Column(db.String(120), nullable=False)
     look_talent = db.Column(db.Boolean, nullable=False, default=False)
     seek_description = db.Column(db.String(400), nullable=False)
@@ -61,7 +63,7 @@ class Artist(db.Model):
     city = db.Column(db.String(120), nullable=False)
     state = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(120), nullable=False)
-    genres = db.Column(db.String(120), nullable=False)
+    genres = db.Column(db.String(255), nullable=False)
     image_link = db.Column(db.String(500),nullable=False)
     facebook_link = db.Column(db.String(120), nullable=False)
 
@@ -117,6 +119,8 @@ app.jinja_env.filters['datetime'] = format_datetime
 def index():
   return render_template('pages/home.html')
 
+# Function to convert values to boolean
+new_tal = lambda x : True if x == "y" else False
 
 #  Venues
 #  ----------------------------------------------------------------
@@ -183,7 +187,7 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-  # DONE: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # DONE: implement search on artists (venues) with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   search_term=request.form.get('search_term', '')
@@ -191,7 +195,7 @@ def search_venues():
 
   # Get Venues record
   dataGetVenues = Venue.query.filter(Venue.name.ilike(f"%{search_term}%") | Venue.city.ilike(f"%{search_term}%") |Venue.state.ilike(f"%{search_term}%")).all()
-  print(dataGetVenues)
+  #print(dataGetVenues)
   ind_srch_ven = []
   # Extra distinct Venue into placeholder with a for loop
   for dataGetVen in dataGetVenues:
@@ -203,7 +207,7 @@ def search_venues():
     ind_srch_ven.append(srch_ven)
   response["count"] = len(dataGetVenues)
   response["data"] = ind_srch_ven
-  print(response)
+  #print(response)
 
   """ response={
     "count": 1,
@@ -219,6 +223,32 @@ def search_venues():
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
+  #data = {}
+  
+  # Query venue details with venue id
+  print(venue_id)
+  dataShowVenue = Venue.query.get(venue_id)
+  print(dataShowVenue)
+  print(dataShowVenue.id)
+  print(dataShowVenue.website_link)
+  print(dataShowVenue.phone)
+  # Generate data file from query
+  data = {
+    "id": dataShowVenue.id,
+    "name": dataShowVenue.name,
+    "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk", "Electric"],
+    "address": dataShowVenue.address,
+    "city": dataShowVenue.city,
+    "state": dataShowVenue.state,
+    "phone": dataShowVenue.phone,
+    "website": dataShowVenue.website_link,
+    "facebook_link": dataShowVenue.facebook_link,
+    "seeking_talent": dataShowVenue.look_talent,
+    "seeking_description": dataShowVenue.seek_description,
+    "image_link": dataShowVenue.image_link
+  }
+  #dataPastShows = []
+  
   data1={
     "id": 1,
     "name": "The Musical Hop",
@@ -243,7 +273,7 @@ def show_venue(venue_id):
     "upcoming_shows_count": 0,
   }
   data2={
-    "id": 2,
+    "id": 5,
     "name": "The Dueling Pianos Bar",
     "genres": ["Classical", "R&B", "Hip-Hop"],
     "address": "335 Delancey Street",
@@ -296,7 +326,7 @@ def show_venue(venue_id):
     "past_shows_count": 1,
     "upcoming_shows_count": 1,
   }
-  data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
+  #data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -310,14 +340,42 @@ def create_venue_form():
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
-
-  # on successful db insert, flash success
-  flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  curr_time = datetime.now().strftime('%Y-%m-%d %H:%S:%M')
+  print(curr_time)
+  rf = request.form['seeking_talent']
+  # Get values from the uses inputed fields
+  try:
+    add_venue = Venue(
+    name = request.form['name'],
+    city = request.form['city'],
+    state = request.form['state'],
+    address = request.form['address'],
+    phone = request.form['phone'],
+    image_link = request.form['image_link'],
+    genres = ','.join([str(elem) for elem in request.form.getlist('genres')]),
+    #genres = ','.join([str(elem) for elem in genresList])
+    facebook_link = request.form['facebook_link'],
+    website_link = request.form['website_link'],
+    #look_talent = request.form['seeking_talent'],
+    look_talent = new_tal(rf),
+    seek_description = request.form['seeking_description'],
+    date_created = curr_time
+    )
+    # TODO: modify data to be the data object returned from db insertion
+    print(add_venue)
+    db.session.add(add_venue)
+    db.session.commit()
+    # on successful db insert, flash success
+    flash('Venue ' + request.form['name'] + ' was successfully listed!')
+  except:
+    # TODO: on unsuccessful db insert, flash an error instead.
+    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    db.session.rollback()
+    print(sys.exc_info())
+    flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.')
+  finally:
+    return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
