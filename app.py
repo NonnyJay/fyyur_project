@@ -52,6 +52,7 @@ class Venue(db.Model):
     seek_description = db.Column(db.String(400), nullable=False)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.now)
     shows = db.relationship("Show", backref="venues", lazy=True)
+    date_last_modified = db.Column(db.DateTime)
     
     def __repr__(self):
       return f'<Venue : {self.id}, {self.name}, {self.city}, {self.state}, {self.look_talent}>'
@@ -73,6 +74,7 @@ class Artist(db.Model):
     seek_description = db.Column(db.String(400), nullable=False)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.now)
     shows = db.relationship("Show", backref="artists", lazy=True)
+    date_last_modified = db.Column(db.DateTime)
     
     
     def __repr__(self):
@@ -342,7 +344,7 @@ def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   curr_time = datetime.now().strftime('%Y-%m-%d %H:%S:%M')
   print(curr_time)
-  rf = request.form['seeking_talent']
+  #rf = request.form['seeking_talent']
   # Get values from the uses inputed fields
   try:
     add_venue = Venue(
@@ -356,10 +358,10 @@ def create_venue_submission():
     #genres = ','.join([str(elem) for elem in genresList])
     facebook_link = request.form['facebook_link'],
     website_link = request.form['website_link'],
-    #look_talent = request.form['seeking_talent'],
-    look_talent = new_tal(rf),
+    look_talent = request.form.get('seeking_talent', False),
+    #look_talent = new_tal(rf),
     seek_description = request.form['seeking_description'],
-    date_created = curr_time
+    #date_created = curr_time
     )
     # TODO: modify data to be the data object returned from db insertion
     print(add_venue)
@@ -434,7 +436,7 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # DONE: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
   search_term=request.form.get('search_term', '')
@@ -468,7 +470,30 @@ def search_artists():
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
-  data1={
+  print(artist_id)
+  dataShowArtist = Artist.query.get(artist_id)
+  print(dataShowArtist.genres)
+  print(dataShowArtist)
+  print(dataShowArtist.id)
+  print(dataShowArtist.website_link)
+  print(dataShowArtist.phone)
+  # Generate data file from query
+  data = {
+    "id": dataShowArtist.id,
+    "name": dataShowArtist.name,
+    #"genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk", "Electric"],
+    "genres": list(dataShowArtist.genres.split(",")),
+    "city": dataShowArtist.city,
+    "state": dataShowArtist.state,
+    "phone": dataShowArtist.phone,
+    "website": dataShowArtist.website_link,
+    "facebook_link": dataShowArtist.facebook_link,
+    "seeking_venue": dataShowArtist.look_venue,
+    "seeking_description": dataShowArtist.seek_description,
+    "image_link": dataShowArtist.image_link
+  }
+  #dataArtPastShows = []
+  """ data1={
     "id": 4,
     "name": "Guns N Petals",
     "genres": ["Rock n Roll"],
@@ -539,7 +564,7 @@ def show_artist(artist_id):
     "past_shows_count": 0,
     "upcoming_shows_count": 3,
   }
-  data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
+  data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0] """
   return render_template('pages/show_artist.html', artist=data)
 
 #  Update
@@ -547,7 +572,39 @@ def show_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
   form = ArtistForm()
-  artist={
+  print(artist_id)
+  dataShowArtist = Artist.query.get(artist_id)
+  
+  form.genres.data = list(dataShowArtist.genres.split(",")) # Convert string to list value
+  form.name.data = dataShowArtist.name
+  form.city.data = dataShowArtist.city
+  form.state.data = dataShowArtist.state
+  form.phone.data = dataShowArtist.phone
+  form.website_link.data = dataShowArtist.website_link
+  form.facebook_link.data = dataShowArtist.facebook_link
+  form.seeking_venue.data = dataShowArtist.look_venue
+  form.seeking_description.data = dataShowArtist.seek_description
+  form.image_link.data = dataShowArtist.image_link
+  print(dataShowArtist.genres)
+  print(dataShowArtist)
+  print(dataShowArtist.id)
+  print(dataShowArtist.website_link)
+  print(dataShowArtist.phone)
+  # Generate data file from query
+  """ artist = {
+    "id": dataShowArtist.id,
+    "name": dataShowArtist.name,
+    "genres": list(dataShowArtist.genres.split(",")),
+    "city": dataShowArtist.city,
+    "state": dataShowArtist.state,
+    "phone": dataShowArtist.phone,
+    "website": dataShowArtist.website_link,
+    "facebook_link": dataShowArtist.facebook_link,
+    "seeking_venue": dataShowArtist.look_venue,
+    "seeking_description": dataShowArtist.seek_description,
+    "image_link": dataShowArtist.image_link
+  } """
+  """ artist={
     "id": 4,
     "name": "Guns N Petals",
     "genres": ["Rock n Roll"],
@@ -559,16 +616,58 @@ def edit_artist(artist_id):
     "seeking_venue": True,
     "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
     "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80"
-  }
+  } """
   # TODO: populate form with fields from artist with ID <artist_id>
-  return render_template('forms/edit_artist.html', form=form, artist=artist)
+  return render_template('forms/edit_artist.html', form=form, artist=dataShowArtist)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
   # TODO: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
+  # Get values from the uses inputed fields
+  form = ArtistForm()
+  curr_time = datetime.now().strftime('%Y-%m-%d %H:%S:%M')
+  print(curr_time)
+  #print(form.genres.data)
+  #print(form.seeking_venue.data)
+  #rv = request.form.get('seeking_venue', False)
+  dataEditArtist = Artist.query.get(artist_id)
+  if  dataEditArtist:
+    try:
+      print("Before getting venue")
+      dataEditArtist.name = request.form['name']
+      dataEditArtist.genres = ','.join([str(elem) for elem in form.genres.data])
+      dataEditArtist.city = request.form['city']
+      dataEditArtist.state = request.form['state']
+      dataEditArtist.phone = request.form['phone']
+      dataEditArtist.website_link = request.form['website_link']
+      dataEditArtist.facebook_link = request.form['facebook_link']
+      dataEditArtist.look_venue = form.seeking_venue.data
+      dataEditArtist.seek_description = request.form['seeking_description']
+      dataEditArtist.image_link = request.form['image_link']
+      dataEditArtist.date_last_modified = datetime.now()
+      print(dataEditArtist.genres)
+      print(dataEditArtist.phone)
+      print(dataEditArtist.look_venue)
+      print(dataEditArtist.website_link)
+      print(dataEditArtist.facebook_link)
+      print(dataEditArtist.image_link)
+      print(dataEditArtist.date_last_modified)
 
-  return redirect(url_for('show_artist', artist_id=artist_id))
+      # TODO: modify data to be the data object returned from db insertion
+      db.session.commit()
+      # on successful db update, flash success
+      flash('Artist Details for ' + form.name.data + ' was successfully updated!')
+    except:
+      # TODO: on unsuccessful db insert, flash an error instead.
+      # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+      # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+      db.session.rollback()
+      print(sys.exc_info())
+      flash('An error occurred. Artist Details for ' + request.form['name'] + ' could not be updated.')
+    finally:
+      return redirect(url_for('show_artist', artist_id=artist_id))
+  return render_template('errors/404.html'), 404
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):

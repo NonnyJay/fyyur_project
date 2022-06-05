@@ -237,7 +237,7 @@ class ArtistForm(Form):
      )
 
     seeking_venue = BooleanField(
-        'seeking_venue', validators= [DataRequired()], default=False
+        'seeking_venue', validators= [Optional()], default=False
     )
 
     seeking_description = StringField(
