@@ -195,20 +195,22 @@ class ArtistForm(Form):
     )
     phone = StringField(
         # TODO implement validation logic for state
-        'phone'
+        'phone', validators=[DataRequired()]
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[DataRequired()]
     )
     genres = SelectMultipleField(
         'genres', validators=[DataRequired()],
         choices=[
+            ('Afrobeats', 'Afrobeats'),
             ('Alternative', 'Alternative'),
             ('Blues', 'Blues'),
             ('Classical', 'Classical'),
             ('Country', 'Country'),
             ('Electronic', 'Electronic'),
             ('Folk', 'Folk'),
+            ('Fuji', 'Fuji'),
             ('Funk', 'Funk'),
             ('Hip-Hop', 'Hip-Hop'),
             ('Heavy Metal', 'Heavy Metal'),
@@ -221,21 +223,24 @@ class ArtistForm(Form):
             ('Reggae', 'Reggae'),
             ('Rock n Roll', 'Rock n Roll'),
             ('Soul', 'Soul'),
+            ('Juju', 'Juju'),
             ('Other', 'Other'),
         ]
      )
     facebook_link = StringField(
         # TODO implement enum restriction
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[DataRequired(), URL()]
      )
 
     website_link = StringField(
-        'website_link'
+        'website_link', validators=[DataRequired(), URL()]
      )
 
-    seeking_venue = BooleanField( 'seeking_venue' )
+    seeking_venue = BooleanField(
+        'seeking_venue', validators= [DataRequired()], default=False
+    )
 
     seeking_description = StringField(
-            'seeking_description'
+            'seeking_description', validators=[DataRequired()]
      )
 

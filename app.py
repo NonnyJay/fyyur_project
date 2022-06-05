@@ -381,17 +381,46 @@ def create_venue_submission():
 def delete_venue(venue_id):
   # TODO: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+  print(venue_id)
+  try:
+      venueDel = Venue.query.get(venue_id)
+      venueName = venueDel.name
+      db.session.delete(venueDel)
+      db.session.commit()
+      # on successful db deletion, flash success
+      flash('Venue ' + venueName + ' was successfully deleted!')
+  except:
+      db.session.rollback()
+      print(sys.exc_info())
+      flash('An error occurred. Venue ' + venueName + ' could not be deleted.')
+  finally:
+      db.session.close()
+    #return  redirect(url_for('index')) Todo.query.filter_by(id=del_id).delete()
+  return None
+  #return render_template('pages/home.html')
 
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
-  return None
 
 #  Artists
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
-  # TODO: replace with real data returned from querying the database
-  data=[{
+  # DONE: replace with real data returned from querying the database
+  data = []
+  # Get Artist information from the database
+  dataArtists = Artist.query.with_entities(Artist.id,Artist.name).order_by('id').all()
+  
+  # Extra Artist list into placeholder with a for loop
+  for dataArtist in dataArtists:
+    ind_artist_data = {
+      "id" : dataArtist[0],
+      "name" : dataArtist[1]
+    }
+    #print(ind_artist_data)
+    # Append all details to the entire data list
+    data.append(ind_artist_data)
+  """ data=[{
     "id": 4,
     "name": "Guns N Petals",
   }, {
@@ -400,7 +429,7 @@ def artists():
   }, {
     "id": 6,
     "name": "The Wild Sax Band",
-  }]
+  }] """
   return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
@@ -408,14 +437,31 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  response={
+  search_term=request.form.get('search_term', '')
+  response = {}
+
+  # Get Artist record
+  dataGetArtists = Artist.query.filter(Artist.name.ilike(f"%{search_term}%")).all()
+  ind_srch_art = []
+  # Extra distinct artist into placeholder with a for loop
+  for dataGetArt in dataGetArtists:
+    srch_art = {
+      "id" : dataGetArt.id,
+      "name" : dataGetArt.name,
+      "num_upcoming_shows": 0,
+    }
+    ind_srch_art.append(srch_art)
+  response["count"] = len(dataGetArtists)
+  response["data"] = ind_srch_art
+  #print(response)
+  """   response={
     "count": 1,
     "data": [{
       "id": 4,
       "name": "Guns N Petals",
       "num_upcoming_shows": 0,
     }]
-  }
+  } """
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/artists/<int:artist_id>')
