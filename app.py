@@ -807,7 +807,25 @@ def create_artist_submission():
 def shows():
   # displays list of shows at /shows
   # TODO: replace with real venues data.
-  data=[{
+  data = []
+  # Get Shows combination with venue and artist table
+  dataShows = db.session.query(Show, Artist, Venue).with_entities(Show.venue_id,Venue.name,Show.artist_id,Artist.name,Artist.image_link,Show.start_time).filter(Artist.id == Show.artist_id,Venue.id == Show.venue_id).order_by(Show.start_time).all()
+
+  # Extra distinct Show into placeholder with a for loop
+  for dataShow in dataShows:
+    ind_show_data = {
+      "venue_id" : dataShow[0],
+      "venue_name" : dataShow[1],
+      "artist_id" : dataShow[2],
+      "artist_name" : dataShow[3],
+      "artist_image_link" : dataShow[4],
+      "start_time" : dataShow[5].strftime('%Y-%m-%d %H:%S:%M')
+    }
+    #print(ind_show_data)
+    # Append show details to list
+    data.append(ind_show_data)
+    #print(data)
+  """ data=[{
     "venue_id": 1,
     "venue_name": "The Musical Hop",
     "artist_id": 4,
@@ -842,7 +860,7 @@ def shows():
     "artist_name": "The Wild Sax Band",
     "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
     "start_time": "2035-04-15T20:00:00.000Z"
-  }]
+  }] """
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
@@ -855,13 +873,29 @@ def create_shows():
 def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
-
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  try:
+    add_show = Show(
+    artist_id = request.form['artist_id'],
+    venue_id = request.form['venue_id'],
+    start_time = request.form['start_time'],
+    )
+    # TODO: modify data to be the data object returned from db insertion
+    print(add_show)
+    print(request.form['artist_id'])
+    print(request.form['venue_id'])
+    print(request.form['start_time'])
+    db.session.add(add_show)
+    db.session.commit()
+    # on successful db insert, flash success
+    flash('Show was successfully listed!')
+  except:
+    # TODO: on unsuccessful db insert, flash an error instead.
+    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+    db.session.rollback()
+    print(sys.exc_info())
+    flash('An error occurred. Show could not be listed.')
+  finally:
+    return render_template('pages/home.html')
 
 @app.errorhandler(404)
 def not_found_error(error):
