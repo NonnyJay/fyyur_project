@@ -1,14 +1,14 @@
 from datetime import datetime
-from flask_wtf import Form
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, AnyOf, URL, Optional
+from flask_wtf import FlaskForm
+from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField, IntegerField
+from wtforms.validators import DataRequired, AnyOf, URL, Optional,ValidationError, Regexp, Length
 
-class ShowForm(Form):
+class ShowForm(FlaskForm):
     artist_id = StringField(
-        'artist_id', validators=[DataRequired()]
+        'artist_id', validators=[DataRequired(), Regexp("^0*[1-9]\d*$", message="Only Positive Whole number is allowed")]
     )
     venue_id = StringField(
-        'venue_id', validators=[DataRequired()]
+        'venue_id', validators=[DataRequired(), Regexp("^0*[1-9]\d*$", message="Only Positive Whole number is allowed")]
     )
     start_time = DateTimeField(
         'start_time',
@@ -16,7 +16,7 @@ class ShowForm(Form):
         default= datetime.today()
     )
 
-class VenueForm(Form):
+class VenueForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
@@ -83,7 +83,9 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone', validators=[DataRequired()]
+        'phone', validators=[DataRequired(),
+                             Length(min=12, max=12, message='Phone Number should be %(min)d characters long'),
+                             Regexp("^(\([0-9]{3}\) ?|[0-9]{3}-)[0-9]{3}-[0-9]{4}$", message="Valid Phone number format is XXX-XXX-XXXX")]
     )
     image_link = StringField(
         'image_link', validators=[DataRequired(), URL()]
@@ -130,7 +132,7 @@ class VenueForm(Form):
 
 
 
-class ArtistForm(Form):
+class ArtistForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
@@ -195,7 +197,9 @@ class ArtistForm(Form):
     )
     phone = StringField(
         # DONE implement validation logic for state
-        'phone', validators=[DataRequired()]
+        'phone', validators=[DataRequired(),
+                             Length(min=12, max=12, message='Phone Number should be %(min)d characters long'),
+                             Regexp("^(\([0-9]{3}\) ?|[0-9]{3}-)[0-9]{3}-[0-9]{4}$", message="Valid Phone number format is XXX-XXX-XXXX")]
     )
     image_link = StringField(
         'image_link', validators=[DataRequired(), URL()]
@@ -228,7 +232,7 @@ class ArtistForm(Form):
         ]
      )
     facebook_link = StringField(
-        # TODO implement enum restriction
+        # DONE implement enum restriction
         'facebook_link', validators=[DataRequired(), URL()]
      )
 
